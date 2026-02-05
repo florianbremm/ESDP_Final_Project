@@ -4,12 +4,14 @@ import numpy as np
 import convert
 from download import Chunk
 
+PIX_MAX = 8000000
+RUNS_MAX = 6000
 
 def init_store(
     zarr_path: str,
     *,
-    pix_max: int = 8000000,
-    runs_max: int = 6000,
+    pix_max: int = PIX_MAX,
+    runs_max: int = RUNS_MAX,
     pix_dim: str = 'pix',
     runs_dim: str = 'runs',
     record_dim: str = 'record',
@@ -45,8 +47,8 @@ def pad_and_add_record(
     time_value: np.datetime64,
     tile_lon0: float,
     tile_lat0: float,
-    pix_max: int = 8000000,
-    runs_max: int = 6000,
+    pix_max: int = PIX_MAX,
+    runs_max: int = RUNS_MAX,
     record_dim: str = 'record',
     pix_dim: str = 'pix',
     runs_dim: str = 'runs',

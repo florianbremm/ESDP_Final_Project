@@ -18,7 +18,8 @@ MAX_PENDING = 2
 POLL_WAIT_TIME = 15
 MAX_TRYS = 3
 CHUNK_SIZE = [1, 0.5]
-CHUNK_ORIGIN = [0, 0]
+COLLECTION = "SENTINEL1_GRD"
+BANDS = ("VV", "VH")
 
 _connection = None
 
@@ -153,7 +154,7 @@ def generate_chunks(area_of_interest: Tile, time_of_interest: tuple[str, str]) -
     return chunks
 
 
-def build_job_recipes(chunks: list[Chunk], collection="SENTINEL1_GRD", bands: Iterable[str]=("VV", "VH")) -> list[Recipe]:
+def build_job_recipes(chunks: list[Chunk], collection=COLLECTION, bands: Iterable[str]=BANDS) -> list[Recipe]:
     """
     Builds a recipe to download the chunks doesn't control for chunk existence
     :param chunks: ``[{"date":'%Y-%m-%d',"tile":{"west":float,"south":float,"east":float,"north":float}}]`` The chunks to create a recipe for
@@ -190,10 +191,9 @@ def download_chunks(
         chunks: list[Chunk],
         process_completed: Callable[[Job], bool],
         check_recipe: Callable[[Recipe], bool] = lambda _: True,
-        collection: str = "SENTINEL1_GRD",
-        bands: Iterable[str]=("VV", "VH"),
+        collection: str = COLLECTION,
+        bands: Iterable[str]=BANDS,
         verbose: int = 2
-
 ) -> tuple[list, list]:
     """
 

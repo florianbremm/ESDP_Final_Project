@@ -9,6 +9,10 @@ import time
 from download import Tile
 
 
+NSIDE = 262144
+DLAT = 15e-5
+DLON = 24e-5
+
 def add_lat_lon(chunk: xr.Dataset, dtype=np.float32):
 
     tfm = Transformer.from_crs(CRS.from_wkt(
@@ -32,7 +36,7 @@ def add_lat_lon(chunk: xr.Dataset, dtype=np.float32):
 def regular_grid_to_healpix(
     chunk: xr.Dataset,
     *,
-    nside: int = 262144,
+    nside: int = NSIDE,
     nest: bool = True,
     lon_name: str = "lon",
     lat_name: str = "lat",
@@ -116,8 +120,8 @@ def _wrap_lon_around(lon_deg: np.ndarray, center_deg: float) -> np.ndarray:
 def healpix_to_regular_grid(
     chunk: xr.Dataset,
     *,
-    dlat: float = 0.01,
-    dlon: float = 0.01,
+    dlat: float = DLAT,
+    dlon: float = DLON,
 ):
     chunk = chunk.load()
     nside = chunk.attrs["nside"]
