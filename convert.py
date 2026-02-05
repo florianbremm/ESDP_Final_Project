@@ -14,7 +14,12 @@ DLAT = 15e-5
 DLON = 24e-5
 
 def add_lat_lon(chunk: xr.Dataset, dtype=np.float32):
-
+    """
+    Takes a xr.Dataset with coordinates in (x [m], y [m]) and adds coordinates in (lon [deg], lat[deg])
+    :param chunk:
+    :param dtype: datatype of the coordinates
+    :return:
+    """
     tfm = Transformer.from_crs(CRS.from_wkt(
         chunk["crs"].attrs["spatial_ref"]),
         CRS.from_epsg(4326), always_xy=True
@@ -42,6 +47,16 @@ def regular_grid_to_healpix(
     lat_name: str = "lat",
     xy_dims: tuple[str, str] = ("y", "x"),
 ):
+    """
+    Re-grids a Dataset onto Healpix Grid
+    :param chunk: Dataset to be regridded
+    :param nside: Healpix Resolution
+    :param nest: Whether to use nested indices
+    :param lon_name: name of the dimension representing longitude
+    :param lat_name: name of the dimension represting latitude
+    :param xy_dims: name of the x and y dimensions
+    :return: Regridded Dataset
+    """
     lon = chunk[lon_name].values
     lat = chunk[lat_name].values
 
@@ -123,6 +138,13 @@ def healpix_to_regular_grid(
     dlat: float = DLAT,
     dlon: float = DLON,
 ):
+    """
+    Re-grids Dataset from Healpix back to a regular grid
+    :param chunk: Dataset to be re-gridded
+    :param dlat: Target lat resolution (don't choose to high, limiting factor is the resolution of the healpix grid)
+    :param dlon: Target lon resolution (don't choose to high, limiting factor is the resolution of the healpix grid)
+    :return: Regridded dataset
+    """
     chunk = chunk.load()
     nside = chunk.attrs["nside"]
     nest  = chunk.attrs["nest"]
@@ -171,6 +193,12 @@ def healpix_to_regular_grid(
     )
 
 def merge_healpix_chunks(chunks: list[xr.Dataset], bbox: Tile):
+    """
+    Merges healpix chunks and crops the merged dataset to the given bbox
+    :param chunks: list of Datasets to be merged
+    :param bbox: bbox to crop to
+    :return: merged and cropped dataset
+    """
     ipix_all = []
     count_all = []
     data_vars = [v for v in chunks[0].data_vars if v not in ('count', 'run_len', 'start_ipix')]
@@ -227,6 +255,9 @@ def merge_healpix_chunks(chunks: list[xr.Dataset], bbox: Tile):
 
 
 def plot_radar_scatter_das(das: list[list[xr.DataArray]], titles: list[list[str]]):
+    """
+    Simple method to plot a grid of radar_scatter data arrays
+    """
     DB_RANGE = [-30, -5]
     shape = (len(das), len(das[0]))
     fig, axes = plt.subplots(shape[0], shape[1])

@@ -95,6 +95,11 @@ def get_connection() -> Connection:
 
 
 def aoi_to_extend(area_of_interest: Tile) -> Tile:
+    """
+    expands AOI to completely cover all intersecting chunks
+    :param area_of_interest:
+    :return: expanded tile
+    """
     extend = Tile(0, 0, 0, 0)
 
     while extend.west >= area_of_interest.west:
@@ -121,7 +126,12 @@ def aoi_to_extend(area_of_interest: Tile) -> Tile:
 
 
 def generate_chunks(area_of_interest: Tile, time_of_interest: tuple[str, str]) -> list[Chunk]:
-
+    """
+    generates chunks (in spatial x temporal grid) for a specified area and time of interest
+    :param area_of_interest:
+    :param time_of_interest:
+    :return: list of all chunks necessary to cover the interest
+    """
     extend = aoi_to_extend(area_of_interest)
     tiles: list[Tile] = []
     x = 0

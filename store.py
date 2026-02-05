@@ -16,6 +16,16 @@ def init_store(
     runs_dim: str = 'runs',
     record_dim: str = 'record',
 ):
+    """
+    initializes zarr archive
+    :param zarr_path: path of the archive directory
+    :param pix_max: len of pixel dimension in the archive
+    :param runs_max: len of run dimension in the archive
+    :param pix_dim: name of pixel dimension
+    :param runs_dim: name or runs dimension
+    :param record_dim: name of record dimension
+    :return:
+    """
     ds_init = xr.Dataset(
         coords={
             record_dim: np.empty((0,), dtype=np.int64),
@@ -54,8 +64,19 @@ def pad_and_add_record(
     runs_dim: str = 'runs',
 ) -> xr.Dataset:
     """
-    Pads all (pix) and (runs) variables to fixed sizes and returns a 1-record dataset
-    appendable via append_dim='record'.
+    prepares a dataset for storage: Pads all pix dimensions to the pix_len in zarr archive and all run dimensions to the
+    run_len. Also adds a record dimension, which will be used to call the append method to write this chunk to its own
+    zarr chunk. Writes time, and chunk identifier that will be used to identify this chunk in retrival
+    :param ds_hp: the Dataset
+    :param time_value: timestamp of this chunk
+    :param tile_lon0: western bound or this chunk
+    :param tile_lat0: southern bound of this chunk
+    :param pix_max: len of pixel dimension in the archive
+    :param runs_max: len of run dimension in the archive
+    :param pix_dim: name of pixel dimension
+    :param runs_dim: name or runs dimension
+    :param record_dim: name of record dimension
+    :return:
     """
     pix_len  = int(ds_hp.sizes.get(pix_dim, 0))
     runs_len = int(ds_hp.sizes.get(runs_dim, 0))
@@ -103,6 +124,9 @@ def pad_and_add_record(
 
 
 def unpad_record(ds_r, *, pix_dim='pix', runs_dim='runs'):
+    """
+    removes padding from the dataset
+    """
     pix_len = int(ds_r["pix_len"].values)
     runs_len = int(ds_r["runs_len"].values)
 
@@ -124,6 +148,14 @@ def get_record_id(
     tile_lon0: float,
     tile_lat0: float
 ) -> None | np.int64:
+    """
+    Uses chunk identifiers to get the corresponding record
+    :param zarr_path: path to archive
+    :param time_value: timestamp of this chunk
+    :param tile_lon0: western bound or this chunk
+    :param tile_lat0: southern bound of this chunk
+    :return:
+    """
     lon0 = np.float32(tile_lon0)
     lat0 = np.float32(tile_lat0)
 
@@ -141,6 +173,12 @@ def get_record_id(
 
 
 def is_chunk_stored(zarr_path, *, chunk: Chunk) -> bool:
+    """
+    convenience wrapper for get_record_id that checks if a chunk is in store
+    :param zarr_path: path to archive
+    :param chunk: chunk to check
+    :return: true if this chunk was already stored
+    """
     _time = np.datetime64(chunk.date, 'ns')
     _lat0 = chunk.tile.south
     _lon0 = chunk.tile.west
@@ -155,10 +193,19 @@ def write_to_zarr(
     tile_lon0: float,
     tile_lat0: float,
 ) -> bool:
-    ds_store = pad_and_add_record(ds_hp, time_value=time_value, tile_lat0=tile_lat0, tile_lon0=tile_lon0)
-
+    """
+    prepares a chunk (that is in healpix) for storage and appends it to the zarr store, thereby writing it into a new chunk
+    :param zarr_path: archive path
+    :param ds_hp: Dataset to store. Must be already converted to healpix
+    :param time_value: timestamp of this chunk
+    :param tile_lon0: western bound or this chunk
+    :param tile_lat0: southern bound of this chunk
+    :return: true if it was appended, false if this chunk was already stored
+    """
     if get_record_id(zarr_path, time_value=time_value, tile_lat0=tile_lat0, tile_lon0=tile_lon0) is not None:
         return False
+
+    ds_store = pad_and_add_record(ds_hp, time_value=time_value, tile_lat0=tile_lat0, tile_lon0=tile_lon0)
 
     ds_store.to_zarr(zarr_path, mode='a', append_dim='record')
     return True
@@ -171,7 +218,14 @@ def read_from_zarr(
     tile_lon0: float,
     tile_lat0: float,
 ) -> bool | xr.Dataset:
-
+    """
+    retrieves a chunk from archive selected by its identifiers
+    :param zarr_path: path to archive
+    :param time_value: timestamp of this chunk
+    :param tile_lon0: western bound or this chunk
+    :param tile_lat0: southern bound of this chunk
+    :return: dataset (still in healpix)
+    """
     record = get_record_id(zarr_path, time_value=time_value, tile_lat0=tile_lat0, tile_lon0=tile_lon0)
     if record is None:
         return False
@@ -185,6 +239,12 @@ def read_chunk_from_zarr(
     *,
     chunk: Chunk
 ) -> bool | xr.Dataset:
+    """
+    convenience wrapper for read_from_zarr that uses a Chunk object as unique identifier to retrieve a chunk
+    :param zarr_path: path to archive
+    :param chunk: Chunk object to select zarr chunk by
+    :return: dataset (still in healpix)
+    """
     _time = np.datetime64(chunk.date, 'ns')
     _lat0 = chunk.tile.south
     _lon0 = chunk.tile.west
